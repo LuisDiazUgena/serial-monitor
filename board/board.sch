@@ -270,7 +270,7 @@ F 3 "" H 5500 3900 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 Text GLabel 5650 3550 1    60   Input ~ 0
-Vcc
+Vin
 Wire Wire Line
 	5650 3550 5650 3700
 Text GLabel 5550 3350 1    60   Input ~ 0
@@ -337,4 +337,23 @@ Text GLabel 1100 2250 3    60   Input ~ 0
 GND
 Wire Wire Line
 	1100 2250 1100 2150
+$Comp
+L Switch_SPDT_x2 SW?
+U 1 1 573F3661
+P 6150 5050
+F 0 "SW?" H 5950 5200 50  0000 C CNN
+F 1 "Switch_SPDT_x2" H 5900 4900 50  0000 C CNN
+F 2 "" H 6150 5050 50  0000 C CNN
+F 3 "" H 6150 5050 50  0000 C CNN
+	1    6150 5050
+	1    0    0    -1  
+$EndComp
+Text GLabel 5700 5050 0    60   Input ~ 0
+Vcc
+Wire Wire Line
+	5700 5050 5850 5050
+Text GLabel 6600 4950 2    60   Input ~ 0
+Vin
+Wire Wire Line
+	6600 4950 6450 4950
 $EndSCHEMATC
