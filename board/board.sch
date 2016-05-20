@@ -33,10 +33,10 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
-Title ""
+Title "SerialMonitor"
 Date ""
-Rev ""
-Comp ""
+Rev "0.1"
+Comp "DrMaker"
 Comment1 ""
 Comment2 ""
 Comment3 ""
@@ -320,4 +320,21 @@ Wire Wire Line
 	3550 4400 4050 4400
 Wire Wire Line
 	4050 4500 3900 4500
+$Comp
+L CP C?
+U 1 1 573F26E6
+P 1100 2000
+F 0 "C?" H 1125 2100 50  0000 L CNN
+F 1 "CP" H 1125 1900 50  0000 L CNN
+F 2 "" H 1138 1850 50  0000 C CNN
+F 3 "" H 1100 2000 50  0000 C CNN
+	1    1100 2000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1400 1850 1100 1850
+Text GLabel 1100 2250 3    60   Input ~ 0
+GND
+Wire Wire Line
+	1100 2250 1100 2150
 $EndSCHEMATC
