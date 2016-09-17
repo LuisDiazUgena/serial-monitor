@@ -1,106 +1,34 @@
-#include <SPI.h>
-#include <Wire.h>
+#include <EEPROM.h>
+#include <Adafruit_ILI9341.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
-#define OLED_RESET 4
-Adafruit_SSD1306 display(OLED_RESET);
+//TFT init
+#define TFT_CS 10
+#define TFT_DC 9
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+boolean backlightStatus = true;
+int serialSpeed=9600;
+//eeprom addresses
+#define firstTimeAddress 0
+#define serialSpeedAddress 1
+#define backlightAddress 2
 
-#define okBtn 7
-#define moveBtn 8
-#define delay_time 750
-void setup() {
+void firstTimeInit(){
+  if (EEPROM.read(firstTimeAddress)==0){
+    EEPROM.write(serialSpeedAddress,serialSpeed);
+    EEPROM.write(backlightAddress,1);
 
-  Serial.begin(19200);
-  pinMode(okBtn,INPUT_PULLUP);
-  pinMode(moveBtn,INPUT_PULLUP);
-
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  showInitInfo();
-}
-String str;
-void loop() {
-  if (digitalRead(okBtn) == 1){
-    showMenu();
-  }
-  if (Serial.available() > 0) {
-    display.clearDisplay();
-    str = Serial.readString();
-    display.setCursor(0, 0);
-    display.println(str);
-    display.display();
-  }
-
-
-}
-void menuOptions(){
-  display.setCursor(10,0);
-  display.println("Serial speed");
-  display.setCursor(10,20);
-  display.println("Back");
-  display.display();
-}
-void showMenu(){
-  display.clearDisplay();
-  int posCursor = 0;
-  menuOptions();
-
-  display.setCursor(0,posCursor);
-  display.print("#");
-  display.display();
-  while(1){
-
-    if(digitalRead(okBtn) == 1){
-      delay(delay_time);
-      if(posCursor==0){
-        Serial.println("Pos = 0");
-          showSerial();
-      }else if(posCursor == 20){
-        Serial.println("Pos = 20");
-        break;
-      }
-
-    }
-    if(digitalRead(moveBtn) == 1){
-      delay(delay_time);
-      display.clearDisplay();
-      if (posCursor==0){
-        posCursor = 20;
-      }else{
-        posCursor = 0;
-      }
-      display.setCursor(0,posCursor);
-      display.print("#");
-      display.display();
-      menuOptions();
-    }
+    EEPROM.write(firstTimeAddress,1);
   }
 }
-void showSerial(){
-  Serial.println("showSerial menu");
-  display.clearDisplay();
-  display.setCursor(0,0);
-  display.println("Serial speed is:");
-  display.display();
-  while(digitalRead(okBtn)!=1){
-
-  }
-  delay(delay_time);
+void loadConfig(){
+  serialSpeed = EEPROM.read(serialSpeedAddress);
+  backlightStatus = EEPROM.read(backlightStatus)
 }
-void showInitInfo() {
-  display.clearDisplay();
-  delay(10);
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("Serial");
-  display.setCursor(0, 17);
-  display.println("Monitor");
-  display.display();
-  delay(750);
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.println("Waiting...");
-  display.display();
+
+void setup(){
+  firstTimeInit(); // Check if there is a custom config or the program should create it.
+  loadConfig();
+  Serial.begin(serialSpeed);
+
 }
