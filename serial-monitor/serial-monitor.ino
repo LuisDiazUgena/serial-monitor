@@ -2,13 +2,15 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <EEPROM.h>
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
 #define okBtn 7
 #define moveBtn 8
-#define delay_time 750
+#define delayTime 250
+
 
 void setup() {
 
@@ -21,10 +23,10 @@ void setup() {
 }
 String str;
 void loop() {
+  Serial.println("loop");
   if (digitalRead(okBtn) == 0){
-    Serial.println("button pressed!");
-    delay(delay_time);
-    //showMenu();
+    delay(delayTime);
+    showMenu();
   }
   if (Serial.available() > 0) {
     display.clearDisplay();
@@ -35,6 +37,146 @@ void loop() {
     display.display();
   }
 
+}
+
+/*
+void firstTimeInit(){
+  if (EEPROM.read(firstTimeAddress)==0){
+    EEPROM.write(serialSpeedAddress,serialSpeed);
+    EEPROM.write(backlightAddress,1); // 1 to turn on the backlight
+    EEPROM.write(bootScreenAddress,true); // 1 to turn on the bootScreen
+
+    EEPROM.write(firstTimeAddress,1);
+  }
+}
+
+void loadConfig(){
+  serialSpeed = EEPROM.read(serialSpeedAddress);
+  backlightStatus = EEPROM.read(backlightStatus)
+  backlightStatus = EEPROM.read(backlightStatus);
+
+  if(EEPROM.read(bootScreenAddress)){
+    bootScreenStatus = true;
+  }else{
+    bootScreenStatus = false;
+  }
+}
+*/
+int serialIndex = 4;
+float serialSpeedOptions[12]={300,1200,2400,4800,9600,19200,38400,57600,74880,115200,230400,250000};
+float serialSpeed = 9600;
+boolean bootAnimation = true;
+
+void showMenu(){
+
+  int spacingY = 10,spacingX=10;
+  int index= 0;
+  int options = 4;
+
+  while(digitalRead(okBtn)!=0){
+    if(digitalRead(moveBtn)==0){
+      index++;
+      if(index==options){
+        index=0;
+      }
+      delay(delayTime);
+
+    }
+
+    display.clearDisplay();
+    if(index!=3){
+      display.setCursor(0,spacingY*index);
+    }else{
+      display.setCursor(70,spacingY*2);
+    }
+    display.println("#");
+    display.setCursor(spacingX, 0);
+    display.println("Serial speed");
+    display.setCursor(85,0);
+    display.println(serialSpeedOptions[serialIndex],0);
+    display.setCursor(spacingX,spacingY);
+    display.println("Boot animation");
+    display.setCursor(105,spacingY);
+    display.println(bootAnimation);
+    display.setCursor(spacingX,spacingY*2);
+    display.println("Back");
+    display.setCursor(8*spacingX,spacingY*2);
+    display.println("Save");
+
+    display.display();
+  }
+  //We have pressed the ok button, so..
+  //now we need to choose what to do :)
+  if(index==0){ //Serial option
+    serialIndex++;
+    if(serialIndex>11){
+      serialIndex=0;
+    }
+    serialSpeed=serialSpeedOptions[serialIndex];
+
+    Serial.print("Serial index =");
+    Serial.println(serialIndex);
+    Serial.print("Serial speed =");
+    Serial.println(serialSpeed);
+
+    delay(delayTime);
+    callMenuFunc();
+  }
+  if(index==1){
+    bootAnimation=!bootAnimation;
+    delay(delayTime);
+    callMenuFunc();
+  }
+
+  if(index==2){
+    //go to main loop
+    display.clearDisplay();
+
+    delay(delayTime);
+    display.setCursor(0, 0);
+    display.setTextSize(1);
+    display.println("Waiting...");
+    display.display();
+
+  }
+  if(index==3){
+    //save data
+    saveData();
+    delay(delayTime);
+  }
+}
+
+#define firstTimeAddress 0
+#define serialSpeedAddress 1
+#define bootScreenAddress 2
+
+void saveData(){
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.println("Saving Data...");
+  display.display();
+  delay(delayTime);
+  EEPROM.write(serialSpeed,serialSpeedAddress);
+  EEPROM.write(bootAnimation,bootScreenAddress);
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.println("Data Saved...");
+  display.display();
+  delay(delayTime*3);
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.println("Waiting...");
+  display.display();
+
+}
+
+void callMenuFunc(){
+  showMenu();
 }
 void showInitInfo() {
   display.clearDisplay();
