@@ -11,10 +11,15 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define moveBtn 8
 #define delayTime 250
 
+int serialIndex = 4;
+float serialSpeedOptions[12]={300,1200,2400,4800,9600,19200,38400,57600,74880,115200,230400,250000};
+float serialSpeed = 9600;
+boolean bootAnimation = true;
 
 void setup() {
-
-  Serial.begin(19200);
+  //loadConfig(); // KEEP ALWAYS IN FIRST PLACE AT SETUP!!!!!
+  Serial.begin(serialSpeed);
+  Serial.println("Serial init!");
   pinMode(okBtn,INPUT_PULLUP);
   pinMode(moveBtn,INPUT_PULLUP);
 
@@ -23,7 +28,7 @@ void setup() {
 }
 String str;
 void loop() {
-  Serial.println("loop");
+  //Serial.println("loop");
   if (digitalRead(okBtn) == 0){
     delay(delayTime);
     showMenu();
@@ -38,34 +43,6 @@ void loop() {
   }
 
 }
-
-/*
-void firstTimeInit(){
-  if (EEPROM.read(firstTimeAddress)==0){
-    EEPROM.write(serialSpeedAddress,serialSpeed);
-    EEPROM.write(backlightAddress,1); // 1 to turn on the backlight
-    EEPROM.write(bootScreenAddress,true); // 1 to turn on the bootScreen
-
-    EEPROM.write(firstTimeAddress,1);
-  }
-}
-
-void loadConfig(){
-  serialSpeed = EEPROM.read(serialSpeedAddress);
-  backlightStatus = EEPROM.read(backlightStatus)
-  backlightStatus = EEPROM.read(backlightStatus);
-
-  if(EEPROM.read(bootScreenAddress)){
-    bootScreenStatus = true;
-  }else{
-    bootScreenStatus = false;
-  }
-}
-*/
-int serialIndex = 4;
-float serialSpeedOptions[12]={300,1200,2400,4800,9600,19200,38400,57600,74880,115200,230400,250000};
-float serialSpeed = 9600;
-boolean bootAnimation = true;
 
 void showMenu(){
 
@@ -146,7 +123,6 @@ void showMenu(){
   }
 }
 
-#define firstTimeAddress 0
 #define serialSpeedAddress 1
 #define bootScreenAddress 2
 
@@ -157,8 +133,8 @@ void saveData(){
   display.println("Saving Data...");
   display.display();
   delay(delayTime);
-  EEPROM.write(serialSpeed,serialSpeedAddress);
-  EEPROM.write(bootAnimation,bootScreenAddress);
+  EEPROM.write(serialSpeedAddress,serialIndex);
+  EEPROM.write(bootScreenAddress,bootAnimation);
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -173,28 +149,47 @@ void saveData(){
   display.println("Waiting...");
   display.display();
 
+  Serial.print("Data saved");
+  Serial.print("Speed = ");
+  Serial.println(EEPROM.read(serialSpeedAddress));
+  Serial.print("boot = ");
+  Serial.println(EEPROM.read(bootScreenAddress));
+
+}
+
+void loadConfig(){
+  serialSpeed = serialSpeedOptions[EEPROM.read(serialSpeedAddress)];
+  bootAnimation = EEPROM.read(bootScreenAddress);
+  Serial.print("Data loaded");
+  Serial.print("Speed = ");
+  Serial.println(EEPROM.read(serialSpeedAddress));
+  Serial.print("boot = ");
+  Serial.println(EEPROM.read(bootScreenAddress));
 }
 
 void callMenuFunc(){
   showMenu();
 }
 void showInitInfo() {
-  display.clearDisplay();
-  delay(10);
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("Serial");
-  display.setCursor(0, 17);
-  display.println("Monitor");
-  display.display();
-  delay(750);
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("DrMaker.es");
-  display.setCursor(0, 17);
-  display.display();
-  delay(750);
+  if(bootAnimation){
+
+    display.clearDisplay();
+    delay(10);
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("Serial");
+    display.setCursor(0, 17);
+    display.println("Monitor");
+    display.display();
+    delay(750);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("DrMaker.es");
+    display.setCursor(0, 17);
+    display.display();
+    delay(750);
+  }
   display.clearDisplay();
   display.setCursor(0, 0);
   display.setTextSize(1);
