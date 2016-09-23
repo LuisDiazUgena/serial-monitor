@@ -3,6 +3,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <EEPROM.h>
+#include <SD.h>
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
@@ -15,13 +16,18 @@ int serialIndex = 4;
 float serialSpeedOptions[12]={300,1200,2400,4800,9600,19200,38400,57600,74880,115200,230400,250000};
 float serialSpeed = 9600;
 boolean bootAnimation = true;
+boolean sdStatus = true;
 
+File hardwareLog;
+#define sdChipSelect 10
 void setup() {
   //loadConfig(); // KEEP ALWAYS IN FIRST PLACE AT SETUP!!!!!
   Serial.begin(serialSpeed);
   Serial.println("Serial init!");
   pinMode(okBtn,INPUT_PULLUP);
   pinMode(moveBtn,INPUT_PULLUP);
+
+  initSD();
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   showInitInfo();
@@ -36,10 +42,11 @@ void loop() {
   if (Serial.available() > 0) {
     display.clearDisplay();
     str = Serial.readString();
-    int lenght = str.length();
+    
     display.setCursor(0, 0);
     display.println(str);
     display.display();
+    saveSD(str);
   }
 
 }
@@ -49,7 +56,7 @@ void showMenu(){
   int spacingY = 10,spacingX=10;
   int index= 0;
   int options = 4;
-
+  int page = 0;
   while(digitalRead(okBtn)!=0){
     if(digitalRead(moveBtn)==0){
       index++;
@@ -67,16 +74,28 @@ void showMenu(){
       display.setCursor(70,spacingY*2);
     }
     display.println("#");
-    display.setCursor(spacingX, 0);
-    display.println("Serial speed");
-    display.setCursor(85,0);
-    display.println(serialSpeedOptions[serialIndex],0);
-    display.setCursor(spacingX,spacingY);
-    display.println("Boot animation");
-    display.setCursor(105,spacingY);
-    display.println(bootAnimation);
+    if(page==0){
+      display.setCursor(spacingX, 0);
+      display.println("Serial speed");
+      display.setCursor(85,0);
+      display.println(serialSpeedOptions[serialIndex],0);
+      display.setCursor(spacingX,spacingY);
+      display.println("Boot animation");
+      display.setCursor(105,spacingY);
+      display.println(bootAnimation);
+    }
+    if(page == 1){
+      display.setCursor(spacingX, 0);
+      display.println("SD use");
+      display.setCursor(85,0);
+      display.println(sdStatus,0);
+      display.setCursor(spacingX,spacingY);
+      display.println("");
+      display.setCursor(105,spacingY);
+      display.println();
+    }
     display.setCursor(spacingX,spacingY*2);
-    display.println("Back");
+    display.println("Next");
     display.setCursor(8*spacingX,spacingY*2);
     display.println("Save");
 
@@ -84,36 +103,45 @@ void showMenu(){
   }
   //We have pressed the ok button, so..
   //now we need to choose what to do :)
-  if(index==0){ //Serial option
-    serialIndex++;
-    if(serialIndex>11){
-      serialIndex=0;
+  if(page==0){
+
+    if(index==0){ //Serial option
+      serialIndex++;
+      if(serialIndex>11){
+        serialIndex=0;
+      }
+      serialSpeed=serialSpeedOptions[serialIndex];
+
+      Serial.print("Serial index =");
+      Serial.println(serialIndex);
+      Serial.print("Serial speed =");
+      Serial.println(serialSpeed);
+
+      delay(delayTime);
+      callMenuFunc();
     }
-    serialSpeed=serialSpeedOptions[serialIndex];
-
-    Serial.print("Serial index =");
-    Serial.println(serialIndex);
-    Serial.print("Serial speed =");
-    Serial.println(serialSpeed);
-
-    delay(delayTime);
-    callMenuFunc();
+    if(index==1){
+      bootAnimation=!bootAnimation;
+      delay(delayTime);
+      callMenuFunc();
+    }
   }
-  if(index==1){
-    bootAnimation=!bootAnimation;
-    delay(delayTime);
-    callMenuFunc();
+  if(page==1){
+    if(index==0){
+      sdStatus=!sdStatus;
+    }
+    if(index==1){
+
+    }
   }
 
   if(index==2){
-    //go to main loop
+    //go to next page
     display.clearDisplay();
+    page++;
+    if(page==maxPage){
 
-    delay(delayTime);
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.println("Waiting...");
-    display.display();
+    }
 
   }
   if(index==3){
@@ -125,7 +153,7 @@ void showMenu(){
 
 #define serialSpeedAddress 1
 #define bootScreenAddress 2
-
+#define sdStatusAddres 3
 void saveData(){
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -133,8 +161,10 @@ void saveData(){
   display.println("Saving Data...");
   display.display();
   delay(delayTime);
+
   EEPROM.write(serialSpeedAddress,serialIndex);
   EEPROM.write(bootScreenAddress,bootAnimation);
+  EEPROM.write(sdStatusAddres,sdStatatus);
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -160,6 +190,8 @@ void saveData(){
 void loadConfig(){
   serialSpeed = serialSpeedOptions[EEPROM.read(serialSpeedAddress)];
   bootAnimation = EEPROM.read(bootScreenAddress);
+  sdStatatus = EEPROM.read(sdStatusAddres);
+
   Serial.print("Data loaded");
   Serial.print("Speed = ");
   Serial.println(EEPROM.read(serialSpeedAddress));
@@ -195,4 +227,30 @@ void showInitInfo() {
   display.setTextSize(1);
   display.println("Waiting...");
   display.display();
+}
+
+void initSD(){
+
+  if (!SD.begin(chipSelect)) {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("NO SD");
+    sdStatatus = false;
+  }
+  Serial.println("initialization done.");
+
+}
+
+void saveSD(String _str){
+  hardwareLog = SD.open("log.txt", FILE_WRITE);
+  if(hardwareLog){
+    hardwareLog.println(_str);
+  }else{
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Unable to open the file");
+    sdStatatus = false;
+    delay(delayTime*2);
+  }
+
 }
